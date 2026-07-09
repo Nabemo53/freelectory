@@ -1,0 +1,25 @@
+# Firebase App Hosting configuration for the Next.js app.
+# Firebase App Hosting has built-in support for Next.js. Store real secrets in
+# Google Cloud Secret Manager / Firebase App Hosting secrets, not in this file.
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: NEXT_PUBLIC_APP_URL
+    value: https://freelectory.web.app
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: TELEGRAM_BOT_USERNAME
+    value: FreelectoryBot
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: TELEGRAM_BOT_TOKEN
+    secret: TELEGRAM_BOT_TOKEN
+  - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
