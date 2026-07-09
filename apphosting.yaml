@@ -23,3 +23,7 @@ env:
     secret: TELEGRAM_BOT_TOKEN
   - variable: OPENAI_API_KEY
     secret: OPENAI_API_KEY
+  - variable: AUTH_SECRET
+    secret: AUTH_SECRET
+  - variable: DATABASE_URL
+    secret: DATABASE_URL
