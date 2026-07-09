@@ -39,6 +39,13 @@ The app automatically uses Supabase when `DATABASE_URL` is present. Without it, 
 
 ## Firebase App Hosting
 
+Firebase project:
+
+- Project ID: `freelectory`
+- Console: `https://console.firebase.google.com/project/freelectory/overview`
+
+App Hosting requires the Firebase project to be upgraded to the Blaze plan.
+
 When deploying to Firebase App Hosting, add these secrets:
 
 ```bash

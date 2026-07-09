@@ -15,7 +15,7 @@ env:
       - BUILD
       - RUNTIME
   - variable: TELEGRAM_BOT_USERNAME
-    value: FreelectoryBot
+    value: freelectory_bot
     availability:
       - BUILD
       - RUNTIME
