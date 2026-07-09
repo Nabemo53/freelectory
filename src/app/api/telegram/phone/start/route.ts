@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createTelegramPhoneVerification, demoUserId } from "@/server/mock-store";
+import { getSession } from "@/server/auth";
+import { createPhoneVerification } from "@/server/backend";
 import { telegramApi } from "@/server/telegram";
 
 async function getBotUsername() {
@@ -23,7 +24,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Phone is required" }, { status: 400 });
   }
 
-  const verification = createTelegramPhoneVerification(demoUserId, phone);
+  const session = await getSession();
+  const verification = await createPhoneVerification(session?.userId, phone);
   const botUsername = await getBotUsername();
   const botUrl = `https://t.me/${botUsername}?start=${verification.code}`;
 

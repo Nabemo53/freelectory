@@ -19,8 +19,9 @@ Freelectory is a Next.js 15 SaaS MVP for people who want to find jobs or clients
 - Framework: Next.js 15 App Router
 - Language: TypeScript
 - UI: Tailwind CSS, shadcn-style local primitives, Lucide Icons
-- State/backend MVP: in-memory server store
-- Integrations: Telegram Bot API webhook stub, optional OpenAI key stub
+- Backend: Next.js API routes, HTTP-only cookie auth, Prisma/Postgres schema, in-memory fallback store
+- Database: Supabase PostgreSQL project `freelectory`
+- Integrations: Telegram Bot API webhook, optional OpenAI key stub
 
 ## Commands
 
@@ -28,6 +29,9 @@ Freelectory is a Next.js 15 SaaS MVP for people who want to find jobs or clients
 npm run dev
 npm run build
 npm run lint
+npm run prisma:generate
+npm run db:push
+npm run db:seed
 ```
 
 ## Environment
@@ -45,6 +49,8 @@ Optional for future real AI generation:
 
 ```env
 OPENAI_API_KEY=
+AUTH_SECRET=
+DATABASE_URL=
 ```
 
 Do not commit `.env.local`.
@@ -69,18 +75,24 @@ Do not commit `.env.local`.
 
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
-| `/api/health` | GET | Service health and Telegram config flag |
-| `/api/auth/register` | POST | Mock registration with token bonus |
-| `/api/profile` | GET, PUT | Read/update demo user profile |
-| `/api/jobs` | GET | Filter mock opportunities |
+| `/api/health` | GET | Service health and Telegram/database/auth config flags |
+| `/api/auth/register` | POST | Register user, set session cookie, grant token bonus |
+| `/api/auth/login` | POST | Login with email/password |
+| `/api/auth/me` | GET | Read current session user |
+| `/api/auth/logout` | POST | Clear session cookie |
+| `/api/profile` | GET, PUT | Read/update current user profile |
+| `/api/jobs` | GET | Filter opportunities |
 | `/api/jobs/like` | POST | Like/skip a job and spend token |
-| `/api/applications/generate` | POST | Generate mock AI reply and create application |
+| `/api/applications/generate` | POST | Generate AI reply and create application |
 | `/api/crm` | GET, PATCH | List/update application CRM statuses |
 | `/api/tokens` | GET, POST | Token balance, costs, transactions, refill |
 | `/api/referrals` | GET, POST | Referral code and rewards |
 | `/api/leaderboard` | GET | Ranking data |
 | `/api/telegram/webhook` | GET, POST | Telegram bot commands |
 | `/api/telegram/set-webhook` | POST | Register Telegram webhook URL |
+| `/api/telegram/phone/start` | POST | Start Telegram phone verification |
+| `/api/telegram/phone/status` | GET | Check Telegram phone verification |
+| `/api/admin/seed` | POST | Seed configured database |
 
 ## Important Source Files
 
@@ -122,12 +134,16 @@ Do not commit `.env.local`.
 - `src/components/ui/input.tsx`
 - `src/components/ui/select.tsx`
 
-### Server MVP
+### Backend
 
 - `src/server/types.ts`: domain types.
-- `src/server/mock-store.ts`: in-memory data store for users, jobs, likes, applications, tokens, referrals.
+- `src/server/backend.ts`: repository facade; uses Prisma when `DATABASE_URL` exists, otherwise uses fallback store.
+- `src/server/auth.ts`: HTTP-only JWT session cookie helpers.
+- `src/server/prisma.ts`: Prisma singleton and database feature flag.
+- `src/server/mock-store.ts`: fallback data store for users, jobs, likes, applications, tokens, referrals.
 - `src/server/ai.ts`: deterministic mock AI reply generator; future OpenAI integration hook.
 - `src/server/telegram.ts`: Telegram Bot API helper.
+- `prisma/schema.prisma`: PostgreSQL data model for Freelectory.
 
 ### Mock Data
 
@@ -136,26 +152,21 @@ Do not commit `.env.local`.
 
 ## Data Model Snapshot
 
-The MVP data model in `src/server/types.ts` includes:
+The implemented data model in `prisma/schema.prisma` and `src/server/types.ts` includes:
 
 - `UserProfile`
 - `JobOpportunity`
 - `Application`
 - `TokenTransaction`
 - `Referral`
+- `TelegramPhoneVerification`
 
-The intended future database from the product plan maps to:
+Supabase project:
 
-- `users`
-- `profiles`
-- `resumes`
-- `jobs`
-- `job_likes`
-- `applications`
-- `tokens`
-- `token_transactions`
-- `referrals`
-- `notifications`
+- Project ref: `qvcqlfyoyoyxmcrabnub`
+- API URL: `https://qvcqlfyoyoyxmcrabnub.supabase.co`
+- Tables are created and seeded.
+- RLS is enabled on app tables.
 
 ## Telegram Bot Behavior
 
@@ -170,8 +181,8 @@ Webhook registration is handled by `src/app/api/telegram/set-webhook/route.ts`.
 
 ## Current MVP Limitations
 
-- Auth is mock UI plus API contract, not real OAuth/SMS verification.
-- Database is in-memory and resets on server restart.
+- OAuth providers are not connected yet.
+- `DATABASE_URL` must be added locally/deployment-side before the app uses Supabase.
 - AI generation is deterministic unless real model integration is added.
 - Telegram webhook needs HTTPS deployment to work in production.
 - Some older mock labels in `src/lib/mock-data.ts` may still need UTF-8 cleanup if they appear in non-updated app sections.

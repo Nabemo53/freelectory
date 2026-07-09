@@ -1,6 +1,6 @@
 # Freelectory MVP
 
-Freelectory is an AI assistant for finding jobs and freelance clients. The MVP includes a Next.js SaaS UI, mock backend API, token economy, CRM, AI reply generation stub, referral mechanics, leaderboard, and Telegram bot webhook.
+Freelectory is an AI assistant for finding jobs and freelance clients. The MVP includes a Next.js SaaS UI, backend API routes, cookie auth, token economy, CRM, AI reply generation stub, referral mechanics, leaderboard, Prisma/Postgres schema, and Telegram bot phone verification.
 
 ## Stack
 
@@ -9,13 +9,15 @@ Freelectory is an AI assistant for finding jobs and freelance clients. The MVP i
 - Tailwind CSS
 - shadcn/ui-style primitives
 - Lucide Icons
-- Server-side mock store for MVP data
+- Prisma + PostgreSQL-compatible schema
+- Server fallback store for local development without `DATABASE_URL`
 - Telegram Bot API webhook integration
 
 ## Run
 
 ```bash
 npm install
+npm run prisma:generate
 npm run dev
 ```
 
@@ -30,11 +32,31 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_BOT_USERNAME=
 OPENAI_API_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+AUTH_SECRET=
+DATABASE_URL=
 ```
 
-`TELEGRAM_BOT_TOKEN` is required for real Telegram replies. `OPENAI_API_KEY` is optional in this MVP; without it the app uses a deterministic mock generator.
+Without `DATABASE_URL`, the app runs on an in-memory fallback store. After connecting PostgreSQL/Supabase, run:
 
-Phone confirmation is designed to happen through Telegram, not SMS or calls:
+```bash
+npm run db:push
+npm run db:seed
+```
+
+## Auth
+
+Implemented API endpoints:
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
+
+Sessions are stored in an HTTP-only `freelectory_session` cookie. Passwords are hashed with bcrypt when a real database is configured.
+
+## Telegram Phone Confirmation
+
+Phone confirmation happens through Telegram, not SMS or calls:
 
 1. The site calls `POST /api/telegram/phone/start` with a phone number.
 2. The API returns a Telegram deep link like `https://t.me/<bot>?start=phone_xxx`.
@@ -59,6 +81,9 @@ Phone confirmation is designed to happen through Telegram, not SMS or calls:
 
 - `GET /api/health`
 - `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
 - `GET /api/profile`
 - `PUT /api/profile`
 - `GET /api/jobs`
@@ -71,6 +96,7 @@ Phone confirmation is designed to happen through Telegram, not SMS or calls:
 - `GET /api/referrals`
 - `POST /api/referrals`
 - `GET /api/leaderboard`
+- `POST /api/admin/seed`
 - `GET /api/telegram/webhook`
 - `POST /api/telegram/webhook`
 - `POST /api/telegram/set-webhook`
@@ -79,13 +105,15 @@ Phone confirmation is designed to happen through Telegram, not SMS or calls:
 
 ## Firebase App Hosting
 
-This repository includes `apphosting.yaml` for Firebase App Hosting, which is the current recommended Firebase path for a dynamic Next.js app.
+This repository includes `apphosting.yaml` for Firebase App Hosting.
 
 Store secrets in Firebase App Hosting / Google Cloud Secret Manager:
 
 ```bash
 firebase apphosting:secrets:set TELEGRAM_BOT_TOKEN
 firebase apphosting:secrets:set OPENAI_API_KEY
+firebase apphosting:secrets:set AUTH_SECRET
+firebase apphosting:secrets:set DATABASE_URL
 ```
 
 Then create an App Hosting backend from the Firebase console or CLI and connect it to the GitHub repository.
@@ -106,7 +134,3 @@ Supported demo commands:
 - `/feed`
 - `/tokens`
 - `/crm`
-
-## Notes
-
-The backend currently uses an in-memory mock store in `src/server/mock-store.ts`. Replace it with Supabase PostgreSQL tables from the product plan when moving past MVP.

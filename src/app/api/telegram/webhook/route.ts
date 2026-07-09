@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { markTelegramAwaitingContact, store, verifyTelegramPhoneByContact } from "@/server/mock-store";
+import { getCurrentUser, listApplications, listJobs, markPhoneAwaitingContact, verifyPhoneByTelegramContact } from "@/server/backend";
 import { sendTelegramMessage } from "@/server/telegram";
 
 type TelegramUpdate = {
@@ -33,19 +33,19 @@ function contactKeyboard() {
 
 async function handleStartPayload(chatId: number, telegramUserId: number | undefined, payload: string) {
   if (payload.startsWith("phone_")) {
-    const verification = markTelegramAwaitingContact(payload, chatId, telegramUserId);
+    const verification = await markPhoneAwaitingContact(payload, chatId, telegramUserId);
 
     if (!verification) {
       await sendTelegramMessage({
         chat_id: chatId,
-        text: "Ссылка подтверждения телефона устарела. Вернитесь на сайт Freelectory и нажмите подтверждение ещё раз.",
+        text: "Ссылка подтверждения телефона устарела. Вернитесь на сайт Freelectory и начните проверку ещё раз.",
       });
       return { ok: true, handled: "expired_phone_verification" };
     }
 
     await sendTelegramMessage({
       chat_id: chatId,
-      text: "Freelectory подтверждает номер через Telegram. Нажмите кнопку ниже и отправьте контакт. SMS и звонок не нужны.",
+      text: "Freelectory подтверждает номер через Telegram. Нажмите кнопку ниже и отправьте свой контакт. SMS и звонок не нужны.",
       reply_markup: contactKeyboard(),
     });
     return { ok: true, handled: "phone_verification_started" };
@@ -58,7 +58,7 @@ async function handleStartPayload(chatId: number, telegramUserId: number | undef
   return { ok: true, handled: "start" };
 }
 
-function buildBotText(text: string | undefined) {
+async function buildBotText(text: string | undefined) {
   const normalized = (text ?? "").trim().toLowerCase();
 
   if (normalized === "/start") {
@@ -70,22 +70,22 @@ function buildBotText(text: string | undefined) {
   }
 
   if (normalized === "/feed") {
-    const job = store.jobs[0];
+    const job = (await listJobs({}))[0];
+    if (!job) return "Пока нет подходящих возможностей.";
     return `${job.title}\n${job.company} · ${job.salary}\nMatch: ${job.matchScore}%\nТеги: ${job.tags.join(", ")}`;
   }
 
   if (normalized === "/tokens") {
-    const user = store.users[0];
-    return `Токены: ${user.tokens} / ${user.maxTokens}\n+5 за подтверждение телефона через Telegram.`;
+    const user = await getCurrentUser();
+    return `Токены: ${user?.tokens ?? 0} / ${user?.maxTokens ?? 20}\n+5 за подтверждение телефона через Telegram.`;
   }
 
   if (normalized === "/crm") {
-    return store.applications
+    const applications = await listApplications();
+    if (!applications.length) return "В CRM пока нет откликов.";
+    return applications
       .slice(0, 5)
-      .map((application) => {
-        const job = store.jobs.find((candidate) => candidate.id === application.jobId);
-        return `${job?.title ?? application.jobId}: ${application.status}`;
-      })
+      .map((application) => `${application.job?.title ?? application.jobId}: ${application.status}`)
       .join("\n");
   }
 
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, handled: "foreign_contact_rejected" });
     }
 
-    const result = verifyTelegramPhoneByContact(chatId, message.contact.user_id ?? message.from?.id, message.contact.phone_number);
+    const result = await verifyPhoneByTelegramContact(chatId, message.contact.user_id ?? message.from?.id, message.contact.phone_number);
 
     if (!result) {
       await sendTelegramMessage({
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   }
 
-  await sendTelegramMessage({ chat_id: chatId, text: buildBotText(text) });
+  await sendTelegramMessage({ chat_id: chatId, text: await buildBotText(text) });
   return NextResponse.json({ ok: true });
 }
 

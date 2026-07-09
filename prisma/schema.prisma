@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SearchMode {
+  job
+  clients
+}
+
+enum Market {
+  cis
+  global
+}
+
+enum AppLanguage {
+  ru
+  en
+  auto
+}
+
+enum OpportunitySource {
+  hh_ru
+  fl_ru
+  upwork
+  manual
+}
+
+enum OpportunityType {
+  vacancy
+  project
+}
+
+enum ApplicationStatus {
+  saved
+  sent
+  viewed
+  replied
+  invited
+  rejected
+}
+
+enum PhoneVerificationStatus {
+  pending
+  awaiting_contact
+  verified
+  expired
+}
+
+model User {
+  id                   String                      @id @default(cuid())
+  email                String                      @unique
+  passwordHash         String?
+  telegramId           String?                     @unique
+  phone                String?
+  phoneVerifiedAt      DateTime?
+  name                 String
+  title                String
+  location             String
+  mode                 SearchMode                  @default(job)
+  market               Market                      @default(cis)
+  language             AppLanguage                 @default(ru)
+  responseLanguage     AppLanguage                 @default(ru)
+  skills               String[]                    @default([])
+  experienceYears      Int                         @default(0)
+  education            String                      @default("")
+  tokens               Int                         @default(20)
+  maxTokens            Int                         @default(20)
+  lastRefillAt         DateTime                    @default(now())
+  referralCode         String                      @unique
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  applications         Application[]
+  likes                JobLike[]
+  tokenTransactions    TokenTransaction[]
+  referrals            Referral[]                  @relation("InviterReferrals")
+  referredBy           Referral[]                  @relation("ReferredUser")
+  phoneVerifications   TelegramPhoneVerification[]
+}
+
+model Opportunity {
+  id            String          @id @default(cuid())
+  source        OpportunitySource
+  title         String
+  company       String
+  externalId    String          @unique
+  salary        String
+  location      String
+  market        Market
+  language      AppLanguage
+  tags          String[]        @default([])
+  requirements  String[]        @default([])
+  matchScore    Int             @default(0)
+  type          OpportunityType
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  likes         JobLike[]
+  applications  Application[]
+
+  @@index([market, language, type])
+}
+
+model JobLike {
+  id            String      @id @default(cuid())
+  userId        String
+  opportunityId String
+  liked         Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId])
+}
+
+model Application {
+  id            String            @id @default(cuid())
+  userId        String
+  opportunityId String
+  status        ApplicationStatus @default(saved)
+  message       String
+  resumeId      String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model TokenTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Referral {
+  id             String   @id @default(cuid())
+  userId         String
+  referredUserId String
+  rewardTokens   Int      @default(10)
+  createdAt      DateTime @default(now())
+  user           User     @relation("InviterReferrals", fields: [userId], references: [id], onDelete: Cascade)
+  referredUser   User     @relation("ReferredUser", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, referredUserId])
+}
+
+model TelegramPhoneVerification {
+  code           String                  @id
+  userId         String
+  phone          String
+  status         PhoneVerificationStatus @default(pending)
+  telegramChatId BigInt?
+  telegramUserId BigInt?
+  verifiedAt     DateTime?
+  createdAt      DateTime                @default(now())
+  expiresAt      DateTime
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([telegramChatId, status])
+}

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { demoUserId, getDemoUser, rewardTokens, store } from "@/server/mock-store";
+import { getSession } from "@/server/auth";
+import { listTokenTransactions, rewardUserTokens } from "@/server/backend";
 
-export function GET() {
-  const user = getDemoUser();
-  const transactions = store.transactions.filter((transaction) => transaction.userId === demoUserId);
+export async function GET() {
+  const session = await getSession();
+  const { user, transactions } = await listTokenTransactions(session?.userId);
 
   return NextResponse.json({
-    balance: user.tokens,
-    maxBalance: user.maxTokens,
+    balance: user?.tokens ?? 0,
+    maxBalance: user?.maxTokens ?? 20,
     refill: "+5 каждые 5 часов",
     transactions,
     costs: {
@@ -22,7 +23,9 @@ export function GET() {
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
+  const session = await getSession();
   const amount = Number(body.amount ?? 5);
-  const result = rewardTokens(demoUserId, String(body.reason ?? "manual_refill"), amount);
+  const result = await rewardUserTokens(session?.userId, String(body.reason ?? "manual_refill"), amount);
+
   return NextResponse.json({ balance: result.user.tokens, transaction: result.transaction });
 }

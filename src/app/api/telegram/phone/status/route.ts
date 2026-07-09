@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTelegramPhoneVerification } from "@/server/mock-store";
+import { getPhoneVerification } from "@/server/backend";
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code") ?? "";
-  const verification = getTelegramPhoneVerification(code);
+  const verification = await getPhoneVerification(code);
 
   if (!verification) {
     return NextResponse.json({ error: "Verification not found" }, { status: 404 });
