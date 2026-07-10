@@ -9,8 +9,6 @@ type TelegramUpdate = {
     contact?: {
       phone_number: string;
       user_id?: number;
-      first_name?: string;
-      last_name?: string;
     };
     from?: { id: number; username?: string; first_name?: string };
   };
@@ -18,14 +16,7 @@ type TelegramUpdate = {
 
 function contactKeyboard() {
   return {
-    keyboard: [
-      [
-        {
-          text: "Поделиться номером телефона",
-          request_contact: true,
-        },
-      ],
-    ],
+    keyboard: [[{ text: "Поделиться номером телефона", request_contact: true }]],
     resize_keyboard: true,
     one_time_keyboard: true,
   };
@@ -53,7 +44,7 @@ async function handleStartPayload(chatId: number, telegramUserId: number | undef
 
   await sendTelegramMessage({
     chat_id: chatId,
-    text: "Привет! Это Freelectory. Команды: /feed, /tokens, /crm.",
+    text: "Привет! Это Freelectory. Команды: /feed, /tokens, /crm. Для подтверждения телефона начните проверку на сайте и откройте персональную ссылку бота.",
   });
   return { ok: true, handled: "start" };
 }
@@ -65,13 +56,13 @@ async function buildBotText(text: string | undefined) {
     return [
       "Привет! Это Freelectory.",
       "Команды: /feed, /tokens, /crm.",
-      "Чтобы подтвердить телефон, начните проверку на сайте и откройте персональную ссылку бота.",
+      "Подтверждение телефона запускается на сайте в настройках, затем бот попросит поделиться контактом.",
     ].join("\n");
   }
 
   if (normalized === "/feed") {
     const job = (await listJobs({}))[0];
-    if (!job) return "Пока нет подходящих возможностей.";
+    if (!job) return "Пока нет подходящих карточек.";
     return `${job.title}\n${job.company} · ${job.salary}\nMatch: ${job.matchScore}%\nТеги: ${job.tags.join(", ")}`;
   }
 
@@ -83,10 +74,7 @@ async function buildBotText(text: string | undefined) {
   if (normalized === "/crm") {
     const applications = await listApplications();
     if (!applications.length) return "В CRM пока нет откликов.";
-    return applications
-      .slice(0, 5)
-      .map((application) => `${application.job?.title ?? application.jobId}: ${application.status}`)
-      .join("\n");
+    return applications.slice(0, 5).map((application) => `${application.job?.title ?? application.jobId}: ${application.status}`).join("\n");
   }
 
   return "Команда не распознана. Используйте /feed, /tokens или /crm.";
@@ -97,9 +85,7 @@ export async function POST(request: NextRequest) {
   const message = update.message;
   const chatId = message?.chat.id;
 
-  if (!chatId) {
-    return NextResponse.json({ ok: true, ignored: true });
-  }
+  if (!chatId) return NextResponse.json({ ok: true, ignored: true });
 
   if (message.contact) {
     if (message.contact.user_id && message.from?.id && message.contact.user_id !== message.from.id) {
@@ -122,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     await sendTelegramMessage({
       chat_id: chatId,
-      text: "Готово! Телефон подтверждён через Telegram. Мы начислили бонусные токены.",
+      text: "Готово! Телефон подтверждён через Telegram. Бонусные токены начислены.",
       reply_markup: { remove_keyboard: true },
     });
     return NextResponse.json({ ok: true, handled: "phone_verified" });

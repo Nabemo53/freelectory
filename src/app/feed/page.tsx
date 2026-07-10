@@ -6,8 +6,8 @@ export default function FeedPage() {
   return (
     <AppShell>
       <PageHeading
-        title="Лента"
-        description="Tinder-механика для вакансий и клиентских заявок: лайк, пропуск, AI-отклик и CRM."
+        title="Reels-лента"
+        description="Вертикальная лента карточек: вакансии, проекты и заявки. Выбирайте рынок, платформу, лайк или крест."
       />
       <OpportunityCard />
     </AppShell>

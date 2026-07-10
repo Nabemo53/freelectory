@@ -19,7 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="shell-grid grid min-h-screen">
         <aside className="hidden border-r bg-muted/40 lg:block">
           <div className="sticky top-0 flex h-screen flex-col">
-            <Link href="/" className="flex h-16 items-center gap-3 border-b px-5">
+            <Link href="/dashboard" className="flex h-16 items-center gap-3 border-b px-5">
               <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Zap className="h-4 w-4" />
               </div>
@@ -56,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   Telegram bot
                 </div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  14 новых карточек и 3 follow-up готовы к отправке.
+                  Телефон подтверждается через вашего бота. Уведомления и карточки тоже будут идти туда.
                 </p>
                 <Button className="mt-3 w-full" size="sm" variant="secondary">
                   Открыть inbox
@@ -77,9 +77,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="ml-auto flex items-center gap-2">
               <Select defaultValue="cis" className="hidden md:block">
-                <option value="cis">СНГ / Российский</option>
-                <option value="us">US Remote</option>
-                <option value="eu">Europe</option>
+                <option value="cis">СНГ / русский</option>
+                <option value="global">Global / English</option>
               </Select>
               <LanguageToggle />
               <div className="hidden h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium md:flex">
@@ -91,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Bell className="h-4 w-4" />
               </Button>
               <button className="hidden h-9 items-center gap-2 rounded-md border px-2 text-sm font-medium sm:flex">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">AD</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">GU</span>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
