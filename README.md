@@ -103,9 +103,31 @@ Phone confirmation happens through Telegram, not SMS or calls:
 - `POST /api/telegram/phone/start`
 - `GET /api/telegram/phone/status`
 
+## Production Deploy
+
+The free production deploy is on Vercel:
+
+[https://freelectory.vercel.app](https://freelectory.vercel.app)
+
+Vercel production env vars already configured:
+
+- `NEXT_PUBLIC_APP_URL`
+- `TELEGRAM_BOT_USERNAME`
+- `TELEGRAM_BOT_TOKEN`
+- `AUTH_SECRET`
+
+Add `DATABASE_URL` when the Supabase connection string is ready, then redeploy:
+
+```bash
+vercel env add DATABASE_URL production
+vercel deploy --prod
+```
+
 ## Firebase App Hosting
 
 This repository includes `apphosting.yaml` for Firebase App Hosting.
+
+Firebase App Hosting is not the free path for this MVP because it requires the Firebase Blaze plan.
 
 Store secrets in Firebase App Hosting / Google Cloud Secret Manager:
 

@@ -37,6 +37,34 @@ npm run dev
 
 The app automatically uses Supabase when `DATABASE_URL` is present. Without it, API routes keep working through the in-memory fallback store.
 
+## Free Production Hosting: Vercel
+
+The production MVP is deployed on Vercel free/Hobby infrastructure:
+
+- Production URL: `https://freelectory.vercel.app`
+- Vercel project: `nabemo53s-projects/freelectory`
+- GitHub repo: `https://github.com/Nabemo53/freelectory`
+
+Configured Vercel production env vars:
+
+- `NEXT_PUBLIC_APP_URL`
+- `TELEGRAM_BOT_USERNAME`
+- `TELEGRAM_BOT_TOKEN`
+- `AUTH_SECRET`
+
+Not configured yet:
+
+- `DATABASE_URL`
+
+Without `DATABASE_URL`, deployed API routes use the in-memory fallback store. Add Supabase `DATABASE_URL` to make production persist users, CRM, tokens, and Telegram phone verification in Postgres.
+
+Recommended command after copying the Supabase connection string:
+
+```bash
+vercel env add DATABASE_URL production
+vercel deploy --prod
+```
+
 ## Firebase App Hosting
 
 Firebase project:
@@ -44,7 +72,7 @@ Firebase project:
 - Project ID: `freelectory`
 - Console: `https://console.firebase.google.com/project/freelectory/overview`
 
-App Hosting requires the Firebase project to be upgraded to the Blaze plan.
+Firebase App Hosting requires the Firebase project to be upgraded to the Blaze plan, so it is not the free deployment path for this MVP.
 
 When deploying to Firebase App Hosting, add these secrets:
 
