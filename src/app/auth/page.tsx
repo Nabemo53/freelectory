@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bot, CheckCircle2, Mail, Phone, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, KeyRound, Mail, ShieldCheck, Zap } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { PublicControls } from "@/components/layout/public-controls";
 import { useLanguage } from "@/components/language-provider";
@@ -12,118 +12,113 @@ import { Input } from "@/components/ui/input";
 
 const copy = {
   ru: {
-    title: "Войдите и получите персональный подбор",
-    subtitle:
-      "После входа Freelectory не заставит выбирать сложные категории. Вы просто объясните AI, что умеете или кого ищете.",
-    benefits: ["20 токенов за регистрацию", "+5 токенов за Telegram", "+5 токенов за подтверждение телефона"],
-    cardTitle: "Регистрация или вход",
-    cardDesc: "Дальше начнётся разговор с AI о вашей задаче.",
-    register: "Регистрация",
-    login: "Вход",
-    name: "Имя",
+    title: "Вход в Freelectory",
+    subtitle: "Сначала вход или регистрация. Потом Freelectory спросит вашу цель и подберёт направление, рынок, платформы и резюме.",
+    benefits: ["20 токенов после первого входа", "Без обязательного телефона", "Telegram подключается позже как бонус"],
+    cardTitle: "Войти или создать аккаунт",
+    cardDesc: "Введите email. Мы отправим одноразовый код для входа без пароля.",
     email: "Email",
-    password: "Пароль",
-    submitRegister: "Создать аккаунт",
-    submitLogin: "Войти",
-    google: "Google позже",
-    telegram: "Telegram позже",
-    or: "или",
-    phoneTitle: "Подтверждение телефона",
-    phoneText: "Подтверждение идёт через Telegram-бота: бот попросит поделиться контактом. SMS и звонок не нужны.",
-    phoneAction: "Подтвердить через Telegram-бота",
-    botLink: "Открыть бота",
-    botReady: "Ссылка готова. Откройте бота и нажмите кнопку «Поделиться номером телефона».",
-    continue: "Продолжить к AI",
-    privacy: "Данные используются только для подбора, резюме и откликов.",
-    authOk: "Готово. Аккаунт создан, можно продолжать.",
+    code: "Код из письма",
+    sendCode: "Получить код",
+    verify: "Войти по коду",
+    sending: "Отправляем...",
+    checking: "Проверяем...",
+    google: "Войти через Google",
+    googleNote: "Google подключим после создания OAuth Client ID и Secret. Сейчас работает бесплатный вход по email-коду.",
+    devCode: "Почтовый сервис пока не подключён. Для теста используйте код:",
+    sent: "Код отправлен. Проверьте почту и введите 6 цифр.",
+    ready: "Готово. Аккаунт создан или найден.",
+    continue: "Продолжить к подбору",
+    privacy: "Номер телефона не нужен для регистрации. Telegram-бот подключается позже в профиле или настройках.",
   },
   en: {
-    title: "Sign in and get a personal match",
-    subtitle:
-      "After login Freelectory will not force you to choose complex categories. You simply explain to AI what you can do or who you are looking for.",
-    benefits: ["20 tokens for registration", "+5 tokens for Telegram", "+5 tokens for phone confirmation"],
-    cardTitle: "Sign up or log in",
-    cardDesc: "Next you will have a simple AI conversation about your task.",
-    register: "Sign up",
-    login: "Log in",
-    name: "Name",
+    title: "Sign in to Freelectory",
+    subtitle: "Sign in first. Then Freelectory asks about your goal and suggests direction, market, platforms, and resume flow.",
+    benefits: ["20 tokens after first sign-in", "No required phone confirmation", "Telegram connects later as a bonus"],
+    cardTitle: "Sign in or create account",
+    cardDesc: "Enter your email. We will send a one-time login code without a password.",
     email: "Email",
-    password: "Password",
-    submitRegister: "Create account",
-    submitLogin: "Log in",
-    google: "Google later",
-    telegram: "Telegram later",
-    or: "or",
-    phoneTitle: "Phone confirmation",
-    phoneText: "Confirmation happens through the Telegram bot: the bot asks you to share your contact. No SMS or call is needed.",
-    phoneAction: "Confirm via Telegram bot",
-    botLink: "Open bot",
-    botReady: "Link is ready. Open the bot and tap Share phone number.",
-    continue: "Continue to AI",
-    privacy: "Data is used only for matching, resume, and replies.",
-    authOk: "Done. Account is ready, you can continue.",
+    code: "Email code",
+    sendCode: "Get code",
+    verify: "Sign in with code",
+    sending: "Sending...",
+    checking: "Checking...",
+    google: "Sign in with Google",
+    googleNote: "Google will be enabled after OAuth Client ID and Secret are created. Free email-code login works now.",
+    devCode: "Email provider is not connected yet. For MVP testing use this code:",
+    sent: "Code sent. Check your email and enter 6 digits.",
+    ready: "Done. Account is created or found.",
+    continue: "Continue to matching",
+    privacy: "Phone is not required for registration. Telegram bot connects later in profile or settings.",
   },
+};
+
+type CodeResponse = {
+  ok: boolean;
+  sent: boolean;
+  devCode?: string;
+  message?: string;
+  error?: string;
 };
 
 export default function AuthPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const t = copy[language];
-  const [mode, setMode] = useState<"register" | "login">("register");
-  const [name, setName] = useState("Freelectory User");
-  const [email, setEmail] = useState("user@example.com");
-  const [password, setPassword] = useState("password123");
-  const [phone, setPhone] = useState("+7 (999) 123-45-67");
-  const [botUrl, setBotUrl] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [devCode, setDevCode] = useState("");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isStartingVerification, setIsStartingVerification] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
-  const submitAuth = async (event: FormEvent<HTMLFormElement>) => {
+  const requestCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setStatus("");
-    setIsSubmitting(true);
+    setDevCode("");
+    setIsSending(true);
 
     try {
-      const response = await fetch(mode === "register" ? "/api/auth/register" : "/api/auth/login", {
+      const response = await fetch("/api/auth/email/start", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ email }),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? "Auth failed");
-      }
-      setStatus(t.authOk);
-    } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "Auth failed");
+      const data = (await response.json()) as CodeResponse;
+      if (!response.ok) throw new Error(data.error ?? data.message ?? "Unable to send code");
+
+      setStatus(data.sent ? t.sent : t.devCode);
+      if (data.devCode) setDevCode(data.devCode);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Unable to send code");
     } finally {
-      setIsSubmitting(false);
+      setIsSending(false);
     }
   };
 
-  const startTelegramPhoneVerification = async () => {
-    setIsStartingVerification(true);
+  const verifyCode = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError("");
+    setIsChecking(true);
+
     try {
-      const response = await fetch("/api/telegram/phone/start", {
+      const response = await fetch("/api/auth/email/verify", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ email, code }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? "Telegram verification failed");
-      }
-      setBotUrl(data.botUrl);
-      setVerificationCode(data.verification.code);
-    } catch (verificationError) {
-      setError(verificationError instanceof Error ? verificationError.message : "Telegram verification failed");
+      if (!response.ok) throw new Error(data.error ?? "Invalid code");
+
+      setIsVerified(true);
+      setStatus(t.ready);
+    } catch (verifyError) {
+      setError(verifyError instanceof Error ? verifyError.message : "Invalid code");
     } finally {
-      setIsStartingVerification(false);
+      setIsChecking(false);
     }
   };
 
@@ -153,7 +148,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <p className="text-xs leading-5 text-muted-foreground">MVP backend: cookie session, Telegram phone flow, Prisma-ready API.</p>
+        <p className="text-xs leading-5 text-muted-foreground">MVP: email-code auth, cookie session, Telegram later.</p>
       </section>
 
       <section className="flex items-center justify-center px-4 py-10">
@@ -163,71 +158,55 @@ export default function AuthPage() {
             <CardDescription>{t.cardDesc}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/35 p-1">
-              <Button type="button" variant={mode === "register" ? "default" : "ghost"} onClick={() => setMode("register")}>
-                {t.register}
-              </Button>
-              <Button type="button" variant={mode === "login" ? "default" : "ghost"} onClick={() => setMode("login")}>
-                {t.login}
-              </Button>
-            </div>
-
-            <form className="space-y-3" onSubmit={submitAuth}>
-              {mode === "register" && <Input placeholder={t.name} value={name} onChange={(event) => setName(event.target.value)} />}
-              <Input placeholder={t.email} type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-              <Input placeholder={t.password} type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-              <Button className="w-full" type="submit" disabled={isSubmitting}>
+            <form className="space-y-3" onSubmit={requestCode}>
+              <Input placeholder={t.email} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              <Button className="w-full" type="submit" disabled={isSending || !email}>
                 <Mail className="h-4 w-4" />
-                {isSubmitting ? "..." : mode === "register" ? t.submitRegister : t.submitLogin}
+                {isSending ? t.sending : t.sendCode}
               </Button>
             </form>
 
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-xs text-muted-foreground">
-              <div className="h-px bg-border" />
-              {t.or}
-              <div className="h-px bg-border" />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button className="justify-start" variant="outline" disabled>
+            <form className="space-y-3" onSubmit={verifyCode}>
+              <Input
+                inputMode="numeric"
+                maxLength={6}
+                placeholder={t.code}
+                value={code}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+                required
+              />
+              <Button className="w-full" type="submit" disabled={isChecking || code.length !== 6 || !email}>
+                <KeyRound className="h-4 w-4" />
+                {isChecking ? t.checking : t.verify}
+              </Button>
+            </form>
+
+            {devCode && (
+              <button
+                type="button"
+                onClick={() => setCode(devCode)}
+                className="w-full rounded-md border bg-muted/35 px-3 py-3 text-left text-sm font-semibold"
+              >
+                {t.devCode} <span className="font-mono text-primary">{devCode}</span>
+              </button>
+            )}
+
+            <div className="rounded-lg border bg-muted/35 p-3">
+              <Button className="w-full justify-start" variant="outline" disabled>
                 <Mail className="h-4 w-4" />
                 {t.google}
               </Button>
-              <Button className="justify-start" variant="outline" disabled>
-                <Bot className="h-4 w-4" />
-                {t.telegram}
-              </Button>
-            </div>
-
-            <div className="rounded-lg border bg-muted/35 p-3">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <Phone className="h-4 w-4" />
-                {t.phoneTitle}
-              </div>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">{t.phoneText}</p>
-              <Input className="mt-3" placeholder="+7 (999) 123-45-67" value={phone} onChange={(event) => setPhone(event.target.value)} />
-              <Button className="mt-3 w-full" variant="secondary" type="button" onClick={startTelegramPhoneVerification} disabled={isStartingVerification}>
-                <Bot className="h-4 w-4" />
-                {isStartingVerification ? "..." : t.phoneAction}
-              </Button>
-              {botUrl && (
-                <div className="mt-3 rounded-md border bg-background p-3">
-                  <p className="text-xs leading-5 text-muted-foreground">{t.botReady}</p>
-                  <a className="mt-2 inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground" href={botUrl} target="_blank" rel="noreferrer">
-                    {t.botLink}
-                  </a>
-                  <p className="mt-2 text-[11px] text-muted-foreground">code: {verificationCode}</p>
-                </div>
-              )}
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">{t.googleNote}</p>
             </div>
 
             {status && <p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">{status}</p>}
             {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
 
-            <Button className="w-full" size="lg" type="button" onClick={() => router.push("/onboarding")}>
+            <Button className="w-full" size="lg" type="button" disabled={!isVerified} onClick={() => router.push("/onboarding")}>
               {t.continue} <ArrowRight className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="h-4 w-4" />
+            <div className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
               {t.privacy}
             </div>
           </CardContent>

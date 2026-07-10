@@ -2,6 +2,7 @@ import type { Application, JobOpportunity, Referral, TelegramPhoneVerification, 
 
 type Store = {
   users: UserProfile[];
+  authCodes: { email: string; code: string; expiresAt: string; createdAt: string }[];
   jobs: JobOpportunity[];
   likes: { userId: string; jobId: string; liked: boolean; createdAt: string }[];
   applications: Application[];
@@ -36,6 +37,7 @@ function createInitialStore(): Store {
         referralCode: "arkadiy",
       },
     ],
+    authCodes: [],
     jobs: [
       {
         id: "job_frontend_hh",

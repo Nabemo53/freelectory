@@ -18,6 +18,8 @@ type RegisterInput = Partial<UserProfile> & {
   password?: string;
 };
 
+const authCodeTtlMs = 10 * 60 * 1000;
+
 type JobFilters = {
   mode?: string | null;
   market?: string | null;
@@ -241,6 +243,71 @@ export async function registerUser(input: RegisterInput) {
   });
 
   return { user: profileFromDb(user), created: true };
+}
+
+async function sendEmailCode(email: string, code: string) {
+  const resendKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+
+  if (!resendKey || !from) {
+    return { sent: false, provider: "dev" as const, devCode: code };
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${resendKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: email,
+      subject: "Freelectory login code",
+      text: `Your Freelectory login code is ${code}. It expires in 10 minutes.`,
+    }),
+  });
+
+  if (!response.ok) {
+    return { sent: false, provider: "resend" as const, devCode: code };
+  }
+
+  return { sent: true, provider: "resend" as const };
+}
+
+export async function createEmailLoginCode(rawEmail: string) {
+  const email = rawEmail.trim().toLowerCase();
+  if (!email || !email.includes("@")) {
+    throw new Error("Valid email is required");
+  }
+
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + authCodeTtlMs);
+
+  if (!hasDatabase) {
+    store.authCodes = store.authCodes.filter((item) => item.email !== email && Date.parse(item.expiresAt) > Date.now());
+    store.authCodes.unshift({ email, code, createdAt: now.toISOString(), expiresAt: expiresAt.toISOString() });
+  } else {
+    // Temporary MVP auth-code store until a durable email auth table/provider is added.
+    store.authCodes = store.authCodes.filter((item) => item.email !== email && Date.parse(item.expiresAt) > Date.now());
+    store.authCodes.unshift({ email, code, createdAt: now.toISOString(), expiresAt: expiresAt.toISOString() });
+  }
+
+  return { ...(await sendEmailCode(email, code)), code };
+}
+
+export async function verifyEmailLoginCode(rawEmail: string, rawCode: string) {
+  const email = rawEmail.trim().toLowerCase();
+  const code = rawCode.trim();
+  const item = store.authCodes.find((candidate) => candidate.email === email && candidate.code === code);
+
+  if (!item || Date.parse(item.expiresAt) < Date.now()) {
+    return { user: null, ok: false, created: false };
+  }
+
+  store.authCodes = store.authCodes.filter((candidate) => candidate !== item);
+  const result = await registerUser({ email, name: email.split("@")[0] || "Freelectory User" });
+  return { user: result.user, ok: true, created: result.created };
 }
 
 export async function loginUser(email: string, password: string) {
