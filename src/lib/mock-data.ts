@@ -29,7 +29,6 @@ export const navItems = [
   { href: "/profile/resumes", label: "Резюме", icon: FileText },
   { href: "/crm", label: "CRM", icon: UsersRound },
   { href: "/leaderboard", label: "Рейтинг", icon: Trophy },
-  { href: "/admin", label: "Admin", icon: Shield },
   { href: "/settings", label: "Настройки", icon: Settings },
 ];
 
@@ -65,6 +64,7 @@ export const opportunities = [
     budget: "180 000 - 220 000 ₽",
     tags: ["React", "TypeScript", "Next.js"],
     filters: ["IT", "frontend", "remote", "middle", "React"],
+    url: "https://hh.ru/search/vacancy?text=Frontend%20Developer",
     summary: "Удаленная роль в продуктовой команде. Нужны интерфейсы, компоненты, работа с API и аккуратная поддержка design system.",
   },
   {
@@ -82,6 +82,7 @@ export const opportunities = [
     budget: "80 000 - 120 000 ₽",
     tags: ["QA", "Web", "Manual"],
     filters: ["IT", "junior", "QA", "без опыта", "удаленка"],
+    url: "https://career.habr.com/vacancies?q=Junior%20QA",
     summary: "Стартовая IT-роль для внимательного человека: тест-кейсы, баг-репорты, проверка веб-интерфейсов и обучение внутри команды.",
   },
   {
@@ -99,6 +100,7 @@ export const opportunities = [
     budget: "120 000 - 180 000 ₽",
     tags: ["CRM", "React", "API"],
     filters: ["разработка", "CRM", "личный кабинет", "оплата", "срок 3 недели"],
+    url: "https://www.fl.ru/projects/",
     summary: "Нужен исполнитель, который быстро соберёт личный кабинет, роли пользователей, оплату и базовую аналитику для менеджеров.",
   },
   {
@@ -116,6 +118,7 @@ export const opportunities = [
     budget: "45 000 - 70 000 ₽",
     tags: ["Landing", "Copy", "Tilda/Next.js"],
     filters: ["лендинг", "IT", "быстрый запуск", "форма заявки"],
+    url: "https://kwork.ru/projects",
     summary: "Нужен лендинг для новой услуги: понятный оффер, блоки доверия, форма заявки и базовая SEO-подготовка.",
   },
   {
@@ -133,6 +136,7 @@ export const opportunities = [
     budget: "$4k-$7k",
     tags: ["React", "Dashboard", "Payments"],
     filters: ["Upwork API", "React", "SaaS", "Stripe", "English"],
+    url: "https://www.upwork.com/nx/search/jobs/?q=react%20saas",
     summary: "A client needs a product dashboard, billing flow, and onboarding screens. The card should arrive through an Upwork API bot integration.",
   },
   {
@@ -150,6 +154,7 @@ export const opportunities = [
     budget: "$2k-$3.5k",
     tags: ["Support", "SaaS", "English"],
     filters: ["remote", "support", "IT", "English B1-B2"],
+    url: "https://www.linkedin.com/jobs/search/?keywords=technical%20support%20specialist",
     summary: "Entry-friendly IT role: help users, write tickets, reproduce bugs, and communicate with product and engineering teams.",
   },
   {
@@ -167,6 +172,7 @@ export const opportunities = [
     budget: "90 000 - 130 000 ₽",
     tags: ["Telegram Bot", "Next.js", "CRM"],
     filters: ["bot", "лиды", "CRM", "уведомления"],
+    url: "https://t.me/s/freelancehunt",
     summary: "Нужно связать Telegram-бота, форму заявки и CRM, чтобы менеджеры видели лиды и статусы в одном месте.",
   },
 ];

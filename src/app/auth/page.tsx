@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Mail, ShieldCheck, UserRound, Zap } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { PublicControls } from "@/components/layout/public-controls";
 import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
@@ -60,24 +60,13 @@ export default function AuthPage() {
   const [devCode, setDevCode] = useState("");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const [googleStatus, setGoogleStatus] = useState("");
 
-  const signInGoogle = async () => {
-    setGoogleLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/auth/google", { method: "POST" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Google sign-in failed");
-      router.push("/onboarding");
-    } catch (signInError) {
-      setError(signInError instanceof Error ? signInError.message : "Google sign-in failed");
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
+  useEffect(() => {
+    setGoogleStatus(new URLSearchParams(window.location.search).get("google") ?? "");
+  }, []);
 
   const requestCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -158,10 +147,20 @@ export default function AuthPage() {
             <CardDescription>{t.cardDesc}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button className="h-11 w-full" size="lg" type="button" onClick={signInGoogle} disabled={googleLoading}>
+            <a className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90" href="/api/auth/google">
               <UserRound className="h-4 w-4" />
-              {googleLoading ? t.googleLoading : t.google}
-            </Button>
+              {t.google}
+            </a>
+            {googleStatus === "not_configured" && (
+              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                Google OAuth не настроен: нужны GOOGLE_CLIENT_ID и GOOGLE_CLIENT_SECRET в Vercel.
+              </p>
+            )}
+            {googleStatus === "failed" && (
+              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                Google не вернул корректный профиль. Попробуйте ещё раз.
+              </p>
+            )}
 
             <details className="rounded-lg border bg-muted/30 p-3">
               <summary className="cursor-pointer text-sm font-semibold">{t.emailFallback}</summary>

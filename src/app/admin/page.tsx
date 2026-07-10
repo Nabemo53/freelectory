@@ -1,9 +1,22 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeading } from "@/components/features/page-heading";
 import { adminMetrics } from "@/lib/mock-data";
+import { getSession } from "@/server/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const session = await getSession();
+  const admins = (process.env.ADMIN_EMAILS ?? "").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
+  const isAdmin = Boolean(session?.email && admins.includes(session.email.toLowerCase()));
+
+  if (!isAdmin) {
+    return (
+      <AppShell>
+        <PageHeading title="Нет доступа" description="Админ-панель доступна только владельцу проекта. Добавьте email в ADMIN_EMAILS на Vercel." />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <PageHeading title="Admin" description="Операционная панель для рынков, пользователей, токенов, интеграций и модерации." />

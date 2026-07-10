@@ -445,18 +445,43 @@ export async function rewardUserTokens(userId: string | undefined, reason: strin
 }
 
 export async function likeJob(userId: string | undefined, jobId: string, liked: boolean) {
-  const job = await getJob(jobId);
+  let job = await getJob(jobId);
+  if (!job && !hasDatabase) {
+    job = {
+      id: jobId,
+      source: "Upwork",
+      title: jobId,
+      company: "Freelectory feed",
+      externalId: jobId,
+      salary: "",
+      location: "Remote",
+      market: "global",
+      language: "en",
+      tags: [],
+      requirements: [],
+      matchScore: 0,
+      type: "project",
+      createdAt: new Date().toISOString(),
+    };
+  }
   if (!job) throw new Error("Job not found");
-  const tokenResult = liked ? await spendUserToken(userId, "job_like") : null;
 
   if (!hasDatabase) {
-    const like = { userId: tokenResult?.user.id ?? userId ?? getDemoUser().id, jobId, liked, createdAt: new Date().toISOString() };
-    store.likes.unshift(like);
-    return { like, job, tokens: tokenResult?.user.tokens };
+    const user = userId ? store.users.find((candidate) => candidate.id === userId) ?? getDemoUser() : getDemoUser();
+    const existing = store.likes.find((candidate) => candidate.userId === user.id && candidate.jobId === jobId);
+    const shouldSpend = liked && existing?.liked !== true;
+    const tokenResult = shouldSpend ? await spendUserToken(user.id, "job_like") : null;
+    const like = existing ?? { userId: user.id, jobId, liked, createdAt: new Date().toISOString() };
+    like.liked = liked;
+    if (!existing) store.likes.unshift(like);
+    return { like, job, tokens: tokenResult?.user.tokens ?? user.tokens, spent: shouldSpend ? 1 : 0 };
   }
 
-  const id = userId ?? tokenResult?.user.id;
+  const id = userId ?? (await prisma.user.findFirst({ orderBy: { createdAt: "asc" } }))?.id;
   if (!id) throw new Error("User not found");
+  const existing = await prisma.jobLike.findUnique({ where: { userId_opportunityId: { userId: id, opportunityId: jobId } } });
+  const shouldSpend = liked && existing?.liked !== true;
+  const tokenResult = shouldSpend ? await spendUserToken(id, "job_like") : null;
   const like = await prisma.jobLike.upsert({
     where: { userId_opportunityId: { userId: id, opportunityId: jobId } },
     update: { liked },
@@ -467,6 +492,7 @@ export async function likeJob(userId: string | undefined, jobId: string, liked: 
     like: { userId: like.userId, jobId: like.opportunityId, liked: like.liked, createdAt: like.createdAt.toISOString() },
     job,
     tokens: tokenResult?.user.tokens,
+    spent: shouldSpend ? 1 : 0,
   };
 }
 

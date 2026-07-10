@@ -53,8 +53,7 @@ const platformCatalog: Record<Market, Platform[]> = {
     { id: "habr", name: "Хабр Карьера", note: "IT-вакансии и разработчики", source: "Публичные вакансии" },
     { id: "fl", name: "FL.ru", note: "Фриланс-проекты", source: "Площадка/парсер позже" },
     { id: "kwork", name: "Kwork", note: "Пакетные услуги и быстрые заказы", source: "Площадка/парсер позже" },
-    { id: "telegram", name: "Telegram", note: "Каналы вакансий и заявок", source: "Ваш Telegram-бот" },
-    { id: "avito", name: "Avito", note: "Работа и локальные услуги", source: "Интеграция позже" },
+    { id: "telegram", name: "Telegram", note: "Только каналы/чаты, куда добавлен бот или откуда пересылают заявки", source: "Ваш Telegram-бот" },
   ],
   global: [
     { id: "upwork", name: "Upwork", note: "Запросы через API/бота, не напрямую в ленту без интеграции", source: "API-бот Upwork" },
@@ -223,6 +222,7 @@ export function OnboardingFlow() {
   const [description, setDescription] = useState("");
   const [resumeMode, setResumeMode] = useState<ResumeMode>("proposal");
   const [listening, setListening] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState("");
   const analysis = useMemo(() => analyze(goal, description, market, language), [goal, description, market, language]);
   const [manualPlatforms, setManualPlatforms] = useState<string[]>([]);
   const selectedPlatforms = manualPlatforms.length ? manualPlatforms : analysis.recommended;
@@ -244,7 +244,10 @@ export function OnboardingFlow() {
   const startVoice = () => {
     const SpeechRecognition = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition
       ?? (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      setVoiceStatus(language === "ru" ? "Этот браузер не поддерживает голосовой ввод Web Speech API. Попробуйте Chrome или вставьте текст из буфера." : "This browser does not support Web Speech API. Try Chrome or paste from clipboard.");
+      return;
+    }
     const recognition = new SpeechRecognition();
     recognition.lang = language === "ru" ? "ru-RU" : "en-US";
     recognition.interimResults = false;
@@ -254,6 +257,11 @@ export function OnboardingFlow() {
       const text = event.results[0]?.[0]?.transcript ?? "";
       if (text) setDescription((value) => `${value ? `${value} ` : ""}${text}`);
     };
+    recognition.onerror = () => {
+      setListening(false);
+      setVoiceStatus(language === "ru" ? "Не удалось получить голос. Проверьте разрешение микрофона." : "Voice input failed. Check microphone permission.");
+    };
+    setVoiceStatus("");
     recognition.start();
   };
 
@@ -323,6 +331,7 @@ export function OnboardingFlow() {
                       {t.paste}
                     </Button>
                   </div>
+                  {voiceStatus && <p className="mt-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-foreground">{voiceStatus}</p>}
                   <textarea className="mt-4 min-h-56 w-full resize-none rounded-md border bg-background p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder={t.placeholder} value={description} onChange={(event) => setDescription(event.target.value)} />
                 </div>
                 <AnalysisPanel t={t} analysis={analysis} />
@@ -430,6 +439,7 @@ type SpeechRecognitionLike = {
   onstart: (() => void) | null;
   onend: (() => void) | null;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
   start: () => void;
 };
 
